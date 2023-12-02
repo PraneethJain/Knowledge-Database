@@ -65,24 +65,28 @@ class TableSwitcher(Screen):
                 for table_name in self.table_names:
                     yield Button(table_name, id=f"{table_name}-button")
 
-            with ContentSwitcher():
+            with ContentSwitcher(initial=self.table_names[0]):
                 for table_name in self.table_names:
                     yield DataTable(id=table_name)
 
-            # with Vertical(id="operation-buttons"):
-            #     yield Button("Insert", id="insert-button")
-            #     yield Button("Update", id="update-button")
-            #     yield Button("Delete", id="delete-button")
+            with Vertical(id="operation-buttons"):
+                yield Button("Insert", id="insert-button")
+                yield Button("Update", id="update-button")
+                yield Button("Delete", id="delete-button")
 
-        # yield (Footer())
+        yield (Footer())
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id is None:
             return
 
         switcher = self.query_one(ContentSwitcher)
-        attributes = ["lane", "swimmer", "country", "time"]
-        primary_key_attributes = ["lane", "swimmer"]
+        if switcher.current is None:
+            return
+
+        table_name = switcher.current
+        attributes = await database.get_table_headers(table_name)
+        primary_key_attributes = await database.get_primary_key(table_name)
         match event.button.id:
             case "insert-button":
                 self.app.push_screen(InputEntry(attributes))
@@ -106,14 +110,6 @@ class TableSwitcher(Screen):
 
             rows = await database.display_query(table_name)
             table.add_rows(rows)
-
-        # table1 = self.query_one("#table-1", DataTable)
-        # table1.add_columns(*ROWS[0])
-        # table1.add_rows(ROWS[1:5])
-
-        # table2 = self.query_one("#table-2", DataTable)
-        # table2.add_columns(*ROWS[0])
-        # table2.add_rows(ROWS[5:])
 
 
 class KnowledgeDatabase(App[None]):
