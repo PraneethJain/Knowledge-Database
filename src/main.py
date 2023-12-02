@@ -82,7 +82,6 @@ class TableSwitcher(Screen):
                 )
             case "delete-button":
                 self.app.push_screen(InputEntry(primary_key_attributes))
-                pass
             case _:
                 switcher.current = event.button.id[:-7]
 
