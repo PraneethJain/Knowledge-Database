@@ -1,6 +1,11 @@
 # Knowledge-Database
 A database to store information about knowledge.
 
+# Team Info
+- **Number**: 29
+- **Name**: long long int
+- Members: [Moida Praneeth Jain](https://github.com/PraneethJain), [Mohammed Faisal](https://github.com/JerseysGet), [Harshvardhan Rana](https://github.com/harshvardhanrana), [Divyansh Jain](https://github.com/divyansh1702)
+
 # List of Tables
 - Area_of_Study: A broad field of study.
 - Subtopic: A specific field of study.
