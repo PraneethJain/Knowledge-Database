@@ -142,9 +142,9 @@ class DatabaseConnector:
         except Exception as E:
             print(E)
 
-    async def get_awards_university_aos(self, university: str, aos: str):
+    async def get_awards_university_aos(self, university: str):
         try:
-            await self.execute(f"select U_Name, COUNT(Sponsor) FROM Teaches AS T INNER JOIN Award AS A ON A.P_SSN=T.P_SSN WHERE U_Name='{university}' AND Subtopic_Name='{aos}' GROUP BY U_Name")
+            await self.execute(f"select Subtopic_Name, COUNT(Sponsor) FROM Teaches AS T INNER JOIN Award AS A ON A.P_SSN=T.P_SSN WHERE U_Name='{university}' GROUP BY U_Name, Subtopic_Name")
             Results = list(await self.fetchall())
             Results.insert(0, ("U_Name", "Number of Awards"))
             return Results
@@ -189,7 +189,7 @@ async def test():
     #     ('Location_Country', 'Banana')
     # )
     # cur = await conn.get_primary_key('Subtopic')
-    cur = await conn.get_awards_university_aos("bard college berlin", "Number Theory")
+    cur = await conn.get_awards_university_aos("bard college berlin")
     print(cur)
 
     await conn.close()
