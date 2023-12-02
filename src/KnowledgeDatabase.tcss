@@ -1,11 +1,44 @@
 #table-buttons {
-	width: 10%;
+	scrollbar-size: 5 1;
+	scrollbar-color: rgb(64, 64, 64);
+	scrollbar-color-hover: rgb(128, 128, 128);
+	scrollbar-color-active: rgb(32, 32, 32);
+	width: 20%;
+}
+
+Button {
+	margin: 1 0 0 0;
+	width: 100%;
+	border: none;
+	padding: 1;
 }
 
 ContentSwitcher {
-	width: 80%;
+	width: 60%;
+	align: center middle;
+	height: 100%;
 }
 
 #operation-buttons {
-	width: 10%;
+	height: 100%;
+	width: 20%;
+	align: center middle;
+}
+
+#operation-buttons > Button {
+	width: 100%;
+}
+
+Footer {
+	background: rgb(0, 0, 0);
+}
+
+DataTable {
+	width: auto;
+	max-width: 95%;
+	height: auto;
+	scrollbar-size: 1 1;
+	scrollbar-color: rgb(64, 64, 64);
+	scrollbar-color-hover: rgb(128, 128, 128);
+	scrollbar-color-active: rgb(32, 32, 32);
 }
