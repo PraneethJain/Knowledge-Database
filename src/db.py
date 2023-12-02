@@ -32,7 +32,8 @@ class DatabaseConnector:
         return await self.cur.fetchall()
     
     async def create_and_populate(self):
-        self.execute("")
+        # TO DO
+        pass
     
     async def get_table_names(self):
         await self.execute("SHOW TABLES")
@@ -146,7 +147,7 @@ class DatabaseConnector:
         try:
             await self.execute(f"select Subtopic_Name, COUNT(Sponsor) FROM Teaches AS T INNER JOIN Award AS A ON A.P_SSN=T.P_SSN WHERE U_Name='{university}' GROUP BY U_Name, Subtopic_Name")
             Results = list(await self.fetchall())
-            Results.insert(0, ("U_Name", "Number of Awards"))
+            Results.insert(0, ("Subtopic_Name", "Number of Awards"))
             return Results
         except Exception as E:
             print(E)
