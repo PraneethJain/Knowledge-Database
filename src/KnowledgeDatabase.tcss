@@ -6,6 +6,12 @@
 	width: 20%;
 }
 
+Static {
+	text-align: center;
+	text-style: bold;
+	margin: 5 0 5 0;
+}
+
 Button {
 	margin: 1 0 0 0;
 	width: 100%;

@@ -1,6 +1,7 @@
+from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.widgets import Button, DataTable, ContentSwitcher, Footer, Input
+from textual.widgets import Button, DataTable, ContentSwitcher, Footer, Input, Static
 from textual.containers import VerticalScroll, Horizontal, Vertical
 from textual.screen import Screen
 
@@ -66,6 +67,61 @@ class InputEntry(Screen):
         yield Button("Cancel", id="cancel")
 
 
+class AdvancedQuery(Screen):
+    BINDINGS = [("escape,space,q,question_mark", "pop_screen", "Close")]
+
+    def __init__(
+        self,
+        input_attr: str,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.input_attr = input_attr
+        self.mapping_with_input = {
+            "topic_name": database.get_prerequisites,
+            "pref": database.get_university_by_pref,
+            "university": database.get_awards_university_aos,
+        }
+
+        self.mapping_without_input = {
+            "last_year_awards": database.last_year_awards,
+            "get_citations": database.get_citations,
+        }
+        if self.input_attr in self.mapping_with_input:
+            self.input_widget = Input(placeholder=self.input_attr, id="qinput")
+            self.func = self.mapping_with_input[self.input_attr]
+
+        self.datatable = DataTable(
+            zebra_stripes=True,
+            header_height=2,
+            cursor_type="none",
+        )
+
+        if self.input_attr in self.mapping_without_input:
+            self.call_later(self.fill_table)
+
+    async def fill_table(self) -> None:
+        results = await self.mapping_without_input[self.input_attr]()
+        self.datatable.add_columns(*results[0])
+        self.datatable.add_rows(results[1:])
+
+    def compose(self) -> ComposeResult:
+        if self.input_attr in self.mapping_with_input:
+            yield self.input_widget
+        yield self.datatable
+
+    @on(Input.Submitted, "#qinput")
+    async def input_submitted(self, event: Input.Submitted):
+        results = await self.func(self.input_widget.value)
+        if len(self.datatable.columns) == 0:
+            self.datatable.add_columns(*results[0])
+        self.datatable.clear()
+        self.datatable.add_rows(results[1:])
+        self.refresh()
+
+
 class TableSwitcher(Screen):
     def __init__(
         self,
@@ -82,6 +138,14 @@ class TableSwitcher(Screen):
             with VerticalScroll(id="table-buttons"):
                 for table_name in self.table_names:
                     yield Button(table_name, id=f"{table_name}-button")
+
+                yield Static("Advanced Queries")
+
+                yield Button("Last Year Awards", id="last-year-awards-button")
+                yield Button("Get Prerequisites", id="get-prerequisites-button")
+                yield Button("Get Citations", id="get-citations-button")
+                yield Button("Get University", id="get-university-button")
+                yield Button("Get Awards University", id="get-awards-university-button")
 
             with ContentSwitcher(initial=self.table_names[0]):
                 for table_name in self.table_names:
@@ -125,6 +189,16 @@ class TableSwitcher(Screen):
                 self.app.push_screen(
                     InputEntry(primary_key_attributes, "delete", table_name)
                 )
+            case "last-year-awards-button":
+                self.app.push_screen(AdvancedQuery("last_year_awards"))
+            case "get-prerequisites-button":
+                self.app.push_screen(AdvancedQuery("topic_name"))
+            case "get-citations-button":
+                self.app.push_screen(AdvancedQuery("get_citations"))
+            case "get-university-button":
+                self.app.push_screen(AdvancedQuery("pref"))
+            case "get-awards-university-button":
+                self.app.push_screen(AdvancedQuery("university"))
             case _:
                 switcher.current = event.button.id[:-7]
 
