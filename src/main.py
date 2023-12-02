@@ -34,9 +34,6 @@ class InputEntry(Screen):
                         await database.insert_query(
                             self.table_name, [wid.value for wid in self.input_widgets]
                         )
-                        print(
-                            self.table_name, [wid.value for wid in self.input_widgets]
-                        )
                     case "update":
                         await database.update_query(
                             self.table_name,
@@ -88,7 +85,12 @@ class TableSwitcher(Screen):
 
             with ContentSwitcher(initial=self.table_names[0]):
                 for table_name in self.table_names:
-                    yield DataTable(id=table_name)
+                    yield DataTable(
+                        id=table_name,
+                        zebra_stripes=True,
+                        header_height=2,
+                        cursor_type="none",
+                    )
 
             with Vertical(id="operation-buttons"):
                 yield Button("Insert", id="insert-button")
