@@ -29,10 +29,13 @@ class DatabaseConnector:
         self.description = self.cur.description
 
     async def fetchall(self):
-        return await self.cur.fetchall()
+        rc = await self.cur.fetchall()
+        await self._conn.commit()
+        return rc
     
     async def create_and_populate(self):
         # TO DO
+
         pass
     
     async def get_table_names(self):
@@ -60,16 +63,22 @@ class DatabaseConnector:
         return await self.fetchall()
 
     async def delete_query(self, table: str, query_attrs: list[str | None]):
+        readcount = await self.get_read_count(table, query_attrs)
+        if (readcount == 0):
+            raise Exception("No tuple with the given attributes found!")
         keys_list = await self.get_primary_key(table)
         query_string = f'DELETE FROM {table} WHERE {" AND ".join([f"{key}='{attr}'" for key, attr in zip(keys_list, query_attrs)])}'
         print(query_string)
         await self.execute(query_string)
         print(self.description)
-        return await self.fetchall()
+        rc = await self.fetchall()
 
     async def update_query(
         self, table: str, query_attrs: list[str | None], update_tuple: tuple[str, str | None]
     ):
+        readcount = await self.get_read_count(table, query_attrs)
+        if (readcount == 0):
+            raise Exception("No tuple with the given attributes found!")
         keys_list = await self.get_primary_key(table)
         query_string = f'UPDATE {table} SET {update_tuple[0]}={f'"{update_tuple[1]}"' if update_tuple[1] is not None else "NULL"} WHERE {" AND ".join([f"{key}='{attr}'" for key, attr in zip(keys_list, query_attrs)])}'
         print(query_string)
@@ -85,6 +94,14 @@ class DatabaseConnector:
 
     async def get_table_headers(self, table: str) -> list[str]:
         return [result[0] for result in await self.table_desc(table)]
+    
+    async def get_read_count(self, table: str, query_attrs: list[str | None]) -> int:
+        keys_list = await self.get_primary_key(table)
+        query_string = f'SELECT * FROM {table} WHERE {" AND ".join([f"{key}='{attr}'" for key, attr in zip(keys_list, query_attrs)])}'
+        await self.execute(query_string)
+        Results = list(await self.fetchall())
+        return len(Results)
+
 
     async def last_year_awards(self) -> list[tuple]:
         await self.execute("select * from Award WHERE YEAR(Date)=YEAR(CURDATE())")
@@ -146,15 +163,16 @@ async def test():
     #     ],
     # )
     
-    # cur = await conn.update_query(
-    #     "Location",
-    #     [
-    #         'a',
-    #     ],
-    #     ('Location_Country', 'Banana')
-    # )
+    cur = await conn.update_query(
+        "Location",
+        [
+            'a',
+        ],
+        ('Location_Country', 'Banana')
+    )
     # cur = await conn.get_primary_key('Subtopic')
-    cur = await conn.get_awards_university_aos("bard college berlin")
+    # cur = await conn.get_awards_university_aos("bard college berlin")
+    cur = await conn.display_query("Location")
     print(cur)
 
     await conn.close()
