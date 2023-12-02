@@ -53,7 +53,7 @@ class DatabaseConnector:
         except Exception as E:
             print(E)
 
-    async def insert_query(self, table: str, query_attrs: list[str | None]):
+    async def insert_query(self, table: str, query_attrs: list[str | None]) -> None:
         query_string = f'INSERT INTO {table} VALUES ({', '.join(map(lambda attr: f"'{attr}'" if attr is not None else "NULL", query_attrs))})'
         print(query_string)
         try:
