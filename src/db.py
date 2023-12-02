@@ -22,7 +22,7 @@ class DatabaseConnector:
         )
         self.cur = await self._conn.cursor()
         if (len(await self.get_table_names()) == 0):
-            await create_and_populate(self)
+            await self.create_and_populate(self)
 
     async def execute(self, query: str):
         await self.cur.execute(query)
