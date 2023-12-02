@@ -8,6 +8,23 @@ from textual.screen import Screen
 from db import create_connector, DatabaseConnector
 
 
+class ErrorScreen(Screen):
+    BINDINGS = [("escape,space,q,question_mark", "pop_screen", "Close")]
+
+    def __init__(
+        self,
+        exception: Exception,
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.exception = exception
+
+    def compose(self) -> ComposeResult:
+        yield Static(f"{self.exception}")
+
+
 class InputEntry(Screen):
     def __init__(
         self,
@@ -30,35 +47,43 @@ class InputEntry(Screen):
         print(event.button.id)
         match event.button.id:
             case "submit":
-                match self.operation:
-                    case "insert":
-                        await database.insert_query(
-                            self.table_name, [wid.value for wid in self.input_widgets]
-                        )
-                    case "update":
-                        await database.update_query(
-                            self.table_name,
-                            [wid.value for wid in self.input_widgets[:-2]],
-                            (
-                                self.input_widgets[-2].value,
-                                self.input_widgets[-1].value,
-                            ),
-                        )
-                    case "delete":
-                        await database.delete_query(
-                            self.table_name, [wid.value for wid in self.input_widgets]
-                        )
-                self.app.pop_screen()
+                try:
+                    match self.operation:
+                        case "insert":
+                            await database.insert_query(
+                                self.table_name,
+                                [wid.value for wid in self.input_widgets],
+                            )
+                        case "update":
+                            await database.update_query(
+                                self.table_name,
+                                [wid.value for wid in self.input_widgets[:-2]],
+                                (
+                                    self.input_widgets[-2].value,
+                                    self.input_widgets[-1].value,
+                                ),
+                            )
+                        case "delete":
+                            await database.delete_query(
+                                self.table_name,
+                                [wid.value for wid in self.input_widgets],
+                            )
+                    self.app.pop_screen()
+                    await self.update_table(self.table_name)
+                except Exception as e:
+                    self.app.push_screen(ErrorScreen(e))
             case "cancel":
                 self.app.pop_screen()
-
-        await self.update_table(self.table_name)
 
     async def update_table(self, table_name: str) -> None:
         table = self.app.query_one(f"#{table_name}", DataTable)
         table.clear()
-        rows = await database.display_query(table_name)
-        table.add_rows(rows)
+        try:
+            rows = await database.display_query(table_name)
+            table.add_rows(rows)
+        except Exception as e:
+            self.app.push_screen(ErrorScreen(e))
+
         self.refresh()
 
     def compose(self) -> ComposeResult:
@@ -136,6 +161,8 @@ class TableSwitcher(Screen):
     def compose(self) -> ComposeResult:
         with Horizontal(id="table-switcher"):
             with VerticalScroll(id="table-buttons"):
+                yield Static("Tables")
+
                 for table_name in self.table_names:
                     yield Button(table_name, id=f"{table_name}-button")
 
@@ -172,8 +199,13 @@ class TableSwitcher(Screen):
             return
 
         table_name = switcher.current
-        attributes = await database.get_table_headers(table_name)
-        primary_key_attributes = await database.get_primary_key(table_name)
+        try:
+            attributes = await database.get_table_headers(table_name)
+            primary_key_attributes = await database.get_primary_key(table_name)
+        except Exception as e:
+            self.app.push_screen(ErrorScreen(e))
+            return
+
         match event.button.id:
             case "insert-button":
                 self.app.push_screen(InputEntry(attributes, "insert", table_name))
@@ -206,7 +238,11 @@ class TableSwitcher(Screen):
         for table_name in self.table_names:
             table = self.query_one(f"#{table_name}", DataTable)
 
-            headers = await database.get_table_headers(table_name)
+            try:
+                headers = await database.get_table_headers(table_name)
+            except Exception as e:
+                self.app.push_screen(ErrorScreen(e))
+                return
             table.add_columns(*headers)
 
             rows = await database.display_query(table_name)
