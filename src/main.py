@@ -4,6 +4,8 @@ from textual.widgets import Button, DataTable, ContentSwitcher, Footer, Input
 from textual.containers import VerticalScroll, Horizontal, Vertical
 from textual.screen import Screen
 
+from db import create_connector, DatabaseConnector
+
 ROWS = [
     ("lane", "swimmer", "country", "time"),
     (4, "Joseph Schooling", "Singapore", 50.39),
@@ -47,15 +49,25 @@ class InputEntry(Screen):
 
 
 class TableSwitcher(Screen):
+    def __init__(
+        self,
+        table_names: list[str],
+        name: str | None = None,
+        id: str | None = None,
+        classes: str | None = None,
+    ) -> None:
+        super().__init__(name, id, classes)
+        self.table_names = table_names
+
     def compose(self) -> ComposeResult:
         with Horizontal(id="table-switcher"):
             with VerticalScroll(id="table-buttons"):
-                yield Button("Table1", id="table-1-button")
-                yield Button("Table2", id="table-2-button")
+                for table_name in self.table_names:
+                    yield Button(table_name, id=f"{table_name}-button")
 
-            with ContentSwitcher(initial="table-1"):
-                yield DataTable(id="table-1")
-                yield DataTable(id="table-2")
+            with ContentSwitcher(initial=self.table_names[0]):
+                for table_name in self.table_names:
+                    yield DataTable(id=table_name)
 
             with Vertical(id="operation-buttons"):
                 yield Button("Insert", id="insert-button")
@@ -64,13 +76,17 @@ class TableSwitcher(Screen):
 
         yield (Footer())
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
+    async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id is None:
             return
 
         switcher = self.query_one(ContentSwitcher)
-        attributes = ["lane", "swimmer", "country", "time"]
-        primary_key_attributes = ["lane", "swimmer"]
+        if switcher.current is None:
+            return
+
+        table_name = switcher.current
+        attributes = await database.get_table_headers(table_name)
+        primary_key_attributes = await database.get_primary_key(table_name)
         match event.button.id:
             case "insert-button":
                 self.app.push_screen(InputEntry(attributes))
@@ -85,14 +101,15 @@ class TableSwitcher(Screen):
             case _:
                 switcher.current = event.button.id[:-7]
 
-    def on_mount(self) -> None:
-        table1 = self.query_one("#table-1", DataTable)
-        table1.add_columns(*ROWS[0])
-        table1.add_rows(ROWS[1:5])
+    async def on_mount(self) -> None:
+        for table_name in self.table_names:
+            table = self.query_one(f"#{table_name}", DataTable)
 
-        table2 = self.query_one("#table-2", DataTable)
-        table2.add_columns(*ROWS[0])
-        table2.add_rows(ROWS[5:])
+            headers = await database.get_table_headers(table_name)
+            table.add_columns(*headers)
+
+            rows = await database.display_query(table_name)
+            table.add_rows(rows)
 
 
 class KnowledgeDatabase(App[None]):
@@ -101,9 +118,13 @@ class KnowledgeDatabase(App[None]):
     BINDINGS = [Binding("q", "quit", "Quit")]
     TITLE = "Knowledge Database"
 
-    def on_mount(self) -> None:
-        self.push_screen(TableSwitcher())
+    async def on_mount(self) -> None:
+        global database
+        database = await create_connector("praneeth", "dnaproject")
+        table_names = await database.get_table_names()
+        self.push_screen(TableSwitcher(table_names))
 
 
 if __name__ == "__main__":
+    database: DatabaseConnector
     KnowledgeDatabase().run()
