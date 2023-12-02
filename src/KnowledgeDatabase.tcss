@@ -1,0 +1,11 @@
+#table-buttons {
+	width: 10%;
+}
+
+ContentSwitcher {
+	width: 80%;
+}
+
+#operation-buttons {
+	width: 10%;
+}
