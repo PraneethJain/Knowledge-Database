@@ -21,6 +21,8 @@ class DatabaseConnector:
             db=self.database_name
         )
         self.cur = await self._conn.cursor()
+        if (len(await self.get_table_names()) == 0):
+            await create_and_populate(self)
 
     async def execute(self, query: str):
         await self.cur.execute(query)
@@ -28,6 +30,9 @@ class DatabaseConnector:
 
     async def fetchall(self):
         return await self.cur.fetchall()
+    
+    async def create_and_populate(self):
+        self.execute("")
     
     async def get_table_names(self):
         await self.execute("SHOW TABLES")
@@ -101,6 +106,51 @@ class DatabaseConnector:
         except Exception as E:
             print(E)
 
+    async def last_year_awards(self) -> tuple[tuple, ...]:
+        try:
+            await self.execute("select * from Award WHERE YEAR(Date)=YEAR(CURDATE())")
+            Results = list(await self.fetchall())
+            Results.insert(0, tuple(await self.get_table_headers("Award")))
+            return Results
+        except Exception as E:
+            print(E)
+
+    async def get_prerequisites(self, topic_name: str) -> tuple[(str)]:
+        try:
+            await self.execute(f"SELECT e.Name FROM Subtopic AS e INNER JOIN Subtopic eh ON eh.Name = e.Prerequisite_of_Name WHERE eh.Name='{topic_name}'")
+            Results = list(await self.fetchall())
+            Results.insert(0, ("Name",))
+            return Results
+        except Exception as E:
+            print(E)
+
+    async def get_citations(self):
+        try:
+            await self.execute("select SSN, Count(CitedByPubID) FROM Person INNER JOIN Publication AS P ON P.PubID = Published GROUP BY SSN")
+            Results = list(await self.fetchall())
+            Results.insert(0, ("SSN", "Count of Citations"))
+            return Results
+        except Exception as E:
+            print(E)
+
+    async def get_university_by_pref(self, pref: str):
+        try:
+            await self.execute(f"select * from University where Name like '{pref}%'")
+            Results = list(await self.fetchall())
+            Results.insert(0, tuple(await self.get_table_headers("University")))
+            return Results
+        except Exception as E:
+            print(E)
+
+    async def get_awards_university_aos(self, university: str, aos: str):
+        try:
+            await self.execute(f"select U_Name, COUNT(Sponsor) FROM Teaches AS T INNER JOIN Award AS A ON A.P_SSN=T.P_SSN WHERE U_Name='{university}' AND Subtopic_Name='{aos}' GROUP BY U_Name")
+            Results = list(await self.fetchall())
+            Results.insert(0, ("U_Name", "Number of Awards"))
+            return Results
+        except Exception as E:
+            print(E)
+
     async def close(self):
         await self.cur.close()
         await self._conn.commit()
@@ -114,8 +164,8 @@ async def create_connector(user_name: str, database_name: str) -> DatabaseConnec
 
 
 async def test():
-    conn = await create_connector("praneeth", "dnaproject")
-    # await conn.insert_query('award', ['hello', 'my', 'name'])
+    conn = await create_connector("root", "dnaproject")
+    # await conn.insert_query('Location', ['a', 'b'])
     # cur = await conn.get_primary_key('award')
     # cur = await conn.delete_query('subtopic', ['Number Theory'])
     # cur = await conn.insert_query(
@@ -132,13 +182,14 @@ async def test():
     # )
     
     # cur = await conn.update_query(
-    #     "subtopic",
+    #     "Location",
     #     [
-    #         'Quantum Mechanics',
+    #         'a',
     #     ],
-    #     ('Prerequisite_of_Name', 'Number Theory')
+    #     ('Location_Country', 'Banana')
     # )
-    cur = await conn.get_primary_key('Subtopic')
+    # cur = await conn.get_primary_key('Subtopic')
+    cur = await conn.get_awards_university_aos("bard college berlin", "Number Theory")
     print(cur)
 
     await conn.close()
