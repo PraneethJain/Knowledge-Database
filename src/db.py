@@ -18,7 +18,7 @@ class DatabaseConnector:
             port=3306,
             user=self.user_name,
             password=os.environ["MYSQLPASS"],
-            db=self.database_name,
+            db=self.database_name
         )
         self.cur = await self._conn.cursor()
 
@@ -113,11 +113,11 @@ async def create_connector(user_name: str, database_name: str) -> DatabaseConnec
     return DBConnect
 
 
-async def main():
-    conn = await create_connector("root", "dnaproject")
+async def test():
+    conn = await create_connector("praneeth", "dnaproject")
     # await conn.insert_query('award', ['hello', 'my', 'name'])
     # cur = await conn.get_primary_key('award')
-    cur = await conn.delete_query('subtopic', ['Number Theory'])
+    # cur = await conn.delete_query('subtopic', ['Number Theory'])
     # cur = await conn.insert_query(
     #     "award",
     #     [
@@ -138,11 +138,11 @@ async def main():
     #     ],
     #     ('Prerequisite_of_Name', 'Number Theory')
     # )
-    # cur = await conn.get_primary_key('subtopic')
+    cur = await conn.get_primary_key('Subtopic')
     print(cur)
 
     await conn.close()
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    asyncio.run(test())
