@@ -133,6 +133,18 @@ class DatabaseConnector:
         Results.insert(0, ("Subtopic_Name", "Number of Awards"))
         return Results
 
+    async def get_city_university(self, city: str) -> list[tuple]:
+        await self.execute(f"select * from University where Location_City='{city}'")
+        Results = list(await self.fetchall())
+        Results.insert(0, tuple(await self.get_table_headers("University")))
+        return Results
+
+    async def get_accreditations(self, uname: str) -> list[tuple]:
+        await self.execute(f"select Accreditation from University_Accreditations WHERE Name='{uname}'")
+        Results = list(await self.fetchall())
+        Results.insert(0, ("Accreditations",))
+        return Results
+
     async def close(self) -> None:
         await self.cur.close()
         await self._conn.commit()

@@ -108,6 +108,8 @@ class AdvancedQuery(Screen):
             "topic_name": database.get_prerequisites,
             "pref": database.get_university_by_pref,
             "university": database.get_awards_university_aos,
+            "city": database.get_city_university,
+            "uname": database.get_accreditations,
         }
 
         self.mapping_without_input = {
@@ -173,6 +175,8 @@ class TableSwitcher(Screen):
                 yield Button("Get Citations", id="get-citations-button")
                 yield Button("Get University", id="get-university-button")
                 yield Button("Get Awards University", id="get-awards-university-button")
+                yield Button("Get City University", id="get-city-university-button")
+                yield Button("Get accreditations", id="get-accreditations-button")
 
             with ContentSwitcher(initial=self.table_names[0]):
                 for table_name in self.table_names:
@@ -231,6 +235,10 @@ class TableSwitcher(Screen):
                 self.app.push_screen(AdvancedQuery("pref"))
             case "get-awards-university-button":
                 self.app.push_screen(AdvancedQuery("university"))
+            case "get-city-university-button":
+                self.app.push_screen(AdvancedQuery("city"))
+            case "get-accreditations-button":
+                self.app.push_screen(AdvancedQuery("uname"))
             case _:
                 switcher.current = event.button.id[:-7]
 
